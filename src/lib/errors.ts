@@ -2,6 +2,9 @@ export type ErrorKind =
   | "wallet_not_connected"
   | "invoice_not_found"
   | "rpc_timeout"
+  | "walletconnect_timeout"
+  | "walletconnect_rejected"
+  | "walletconnect_session_expired"
   | "unknown";
 
 export interface ClassifiedError {
@@ -24,6 +27,25 @@ const PATTERNS: { kind: ErrorKind; match: RegExp; message: string }[] = [
     kind: "rpc_timeout",
     match: /rpc timeout|timed out|timeout/i,
     message: "The Stellar RPC request timed out. Please try again.",
+  },
+  {
+    kind: "walletconnect_timeout",
+    match:
+      /walletconnect.*(timed out|timeout|proposal expired|session proposal)|session proposal.*(timed out|expired)|pairing.*(timed out|expired)|relay.*(timed out|timeout|disconnected|unavailable)/i,
+    message:
+      "WalletConnect timed out waiting for your mobile wallet. Check your connection and scan the QR code again.",
+  },
+  {
+    kind: "walletconnect_rejected",
+    match:
+      /user rejected|user denied|rejected by user|request rejected|signature rejected|signing rejected|user cancelled|user canceled/i,
+    message: "The request was rejected in your mobile wallet. Approve it to continue.",
+  },
+  {
+    kind: "walletconnect_session_expired",
+    match:
+      /session not found|session expired|no matching session|session topic.*(missing|unknown)|invalid session/i,
+    message: "Your WalletConnect session has expired. Reconnect your mobile wallet to continue.",
   },
 ];
 

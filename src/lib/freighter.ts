@@ -12,20 +12,10 @@ export const NETWORK_PASSPHRASE =
 
 export type WalletType = "freighter" | "walletconnect";
 
-let walletConnectKit: WalletConnectKit | null = null;
-
-/** Initialize WalletConnect kit */
-async function initWalletConnectKit() {
-  if (walletConnectKit) return walletConnectKit;
+/** Lazily load the WalletConnect v2 service (browser only). */
+async function getWalletConnectService() {
   if (typeof window === "undefined") throw new Error("Browser only");
-
-  try {
-    const { getStellarWalletKit } = await import("@/lib/walletconnect-kit-stub");
-    walletConnectKit = getStellarWalletKit() as any;
-    return walletConnectKit;
-  } catch {
-    throw new Error("WalletConnect kit not available");
-  }
+  return import("@/lib/walletconnect");
 }
 
 /** Connect Freighter and return the user's public key. */
@@ -53,11 +43,8 @@ export async function signWithFreighter(xdr: string): Promise<string> {
 export async function connectWalletConnect(): Promise<{ publicKey: string; uri: string }> {
   if (typeof window === "undefined") throw new Error("Browser only");
 
-  const kit = await initWalletConnectKit();
-  if (!kit) throw new Error("WalletConnect kit not initialized");
-  const { uri, publicKey } = await (kit as any).connect();
-
-  return { publicKey, uri };
+  const { connectWalletConnect: connect } = await getWalletConnectService();
+  return connect();
 }
 
 /** Get the WalletConnect public key if connected. */
@@ -65,9 +52,8 @@ export async function getWalletConnectPublicKey(): Promise<string | null> {
   if (typeof window === "undefined") throw new Error("Browser only");
 
   try {
-    const kit = await initWalletConnectKit();
-    if (!kit) return null;
-    return (kit as any).getPublicKey() || null;
+    const { getWalletConnectPublicKey: getKey } = await getWalletConnectService();
+    return getKey();
   } catch {
     return null;
   }
@@ -77,9 +63,8 @@ export async function getWalletConnectPublicKey(): Promise<string | null> {
 export async function signWithWalletConnect(xdr: string): Promise<string> {
   if (typeof window === "undefined") throw new Error("Browser only");
 
-  const kit = await initWalletConnectKit();
-  if (!kit) throw new Error("WalletConnect kit not initialized");
-  return (kit as any).signTransaction(xdr, NETWORK_PASSPHRASE);
+  const { signWithWalletConnect: sign } = await getWalletConnectService();
+  return sign(xdr, NETWORK_PASSPHRASE);
 }
 
 /** Disconnect WalletConnect. */
@@ -87,9 +72,8 @@ export async function disconnectWalletConnect(): Promise<void> {
   if (typeof window === "undefined") throw new Error("Browser only");
 
   try {
-    const kit = await initWalletConnectKit();
-    if (!kit) return;
-    await (kit as any).disconnect();
+    const { disconnectWalletConnect: disconnect } = await getWalletConnectService();
+    await disconnect();
   } catch {
     // Ignore errors on disconnect
   }
