@@ -2,9 +2,8 @@ export type ErrorKind =
   | "wallet_not_connected"
   | "invoice_not_found"
   | "rpc_timeout"
-  | "walletconnect_timeout"
-  | "walletconnect_rejected"
-  | "walletconnect_session_expired"
+  | "not_a_cosigner"
+  | "cosigner_approval_failed"
   | "unknown";
 
 export interface ClassifiedError {
@@ -29,23 +28,14 @@ const PATTERNS: { kind: ErrorKind; match: RegExp; message: string }[] = [
     message: "The Stellar RPC request timed out. Please try again.",
   },
   {
-    kind: "walletconnect_timeout",
-    match:
-      /walletconnect.*(timed out|timeout|proposal expired|session proposal)|session proposal.*(timed out|expired)|pairing.*(timed out|expired)|relay.*(timed out|timeout|disconnected|unavailable)/i,
-    message:
-      "WalletConnect timed out waiting for your mobile wallet. Check your connection and scan the QR code again.",
+    kind: "not_a_cosigner",
+    match: /not a cosigner|not a co-signer|not a designated cosigner|not a designated co-signer|cosigner not found|co-signer not found/i,
+    message: "This wallet is not a designated co-signer for this invoice.",
   },
   {
-    kind: "walletconnect_rejected",
-    match:
-      /user rejected|user denied|rejected by user|request rejected|signature rejected|signing rejected|user cancelled|user canceled/i,
-    message: "The request was rejected in your mobile wallet. Approve it to continue.",
-  },
-  {
-    kind: "walletconnect_session_expired",
-    match:
-      /session not found|session expired|no matching session|session topic.*(missing|unknown)|invalid session/i,
-    message: "Your WalletConnect session has expired. Reconnect your mobile wallet to continue.",
+    kind: "cosigner_approval_failed",
+    match: /cosigner approval failed|co-signer approval failed|approval failed|failed to approve/i,
+    message: "Co-signer approval could not be submitted. Please try again.",
   },
 ];
 

@@ -111,3 +111,50 @@ export async function signTransaction(xdr: string): Promise<string> {
   // Fall back to Freighter
   return signWithFreighter(xdr);
 }
+
+/** Build the canonical co-signer approval message for an invoice. */
+export function buildCoSignerApprovalMessage(invoiceId: string, address: string): string {
+  return [
+    "Stellar Split — Co-signer Approval",
+    `Invoice: ${invoiceId}`,
+    `Co-signer: ${address}`,
+    `Network: ${NETWORK_PASSPHRASE}`,
+  ].join("\n");
+}
+
+export interface CoSignerApprovalSignature {
+  /** The co-signer address that produced the signature. */
+  address: string;
+  /** The invoice being approved. */
+  invoiceId: string;
+  /** The exact message that was signed (for server-side verification). */
+  message: string;
+  /** Base64-encoded signature returned by the wallet. */
+  signature: string;
+}
+
+/**
+ * Sign a co-signer approval for an invoice using the connected wallet.
+ *
+ * Builds a deterministic approval message and signs it via the active wallet
+ * adapter (WalletConnect if connected, otherwise Freighter). Throws if no
+ * wallet is connected so callers can prompt the user to connect first.
+ */
+export async function signCoSignerApproval(
+  invoiceId: string,
+  address: string,
+): Promise<CoSignerApprovalSignature> {
+  if (typeof window === "undefined") throw new Error("Browser only");
+  if (!invoiceId) throw new Error("Invoice ID is required");
+  if (!address) throw new Error("Co-signer address is required");
+
+  const connected = await isWalletConnected();
+  if (!connected) {
+    throw new Error("Wallet not connected. Please connect your Freighter wallet.");
+  }
+
+  const message = buildCoSignerApprovalMessage(invoiceId, address);
+  const signature = await signTransaction(message);
+
+  return { address, invoiceId, message, signature };
+}
